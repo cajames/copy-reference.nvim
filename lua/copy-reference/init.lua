@@ -11,24 +11,60 @@ M.config = {
 	},
 }
 
-function M.copy_reference()
-	local path
+-- Forward declare for reference in setup
+local setup_keymaps
+
+-- Setup first for clarity
+function M.setup(opts)
+	M._setup_called = true
+	M.config = vim.tbl_extend("force", M.config, opts or {})
+	setup_keymaps()
+end
+
+local function get_path()
+	local p
 	if M.config.relative_path then
-		path = vim.fn.fnamemodify(vim.fn.expand("%"), ":~:.")
+		p = vim.fn.fnamemodify(vim.fn.expand("%"), ":~:.")
 	else
-		path = vim.fn.expand("%:p")
+		p = vim.fn.expand("%:p")
+	end
+	return p
+end
+
+--- Copy a file reference
+--- @param range table|nil Optional table { start = number, finish = number }
+function M.copy_reference(range)
+	local path = get_path()
+	if not path or path == "" then
+		if M.config.show_notification then
+			vim.notify("No file associated with current buffer", vim.log.levels.WARN)
+		end
+		return
 	end
 
-	local line1 = vim.fn.line("v")
-	local line2 = vim.fn.line(".")
+	local start_line, end_line
+	if range and range.start and range.finish then
+		start_line, end_line = range.start, range.finish
+	else
+		local mode = vim.fn.mode()
+		if mode:match("^[vV\022]") then
+			-- Visual mode selection
+			local l1 = vim.fn.line("v")
+			local l2 = vim.fn.line(".")
+			start_line = math.min(l1, l2)
+			end_line = math.max(l1, l2)
+		else
+			-- Normal mode: current line
+			start_line = vim.fn.line(".")
+			end_line = start_line
+		end
+	end
 
 	local reference
-	if line1 == line2 then
-		reference = path .. ":" .. line1
+	if start_line == end_line then
+		reference = path .. ":" .. start_line
 	else
-		local start = math.min(line1, line2)
-		local finish = math.max(line1, line2)
-		reference = path .. ":" .. start .. "-" .. finish
+		reference = path .. ":" .. start_line .. "-" .. end_line
 	end
 
 	vim.fn.setreg(M.config.default_register, reference)
@@ -38,7 +74,7 @@ function M.copy_reference()
 	end
 end
 
-local function setup_keymaps()
+setup_keymaps = function()
 	if M.config.keymaps.copy then
 		vim.keymap.set({ "n", "v" }, M.config.keymaps.copy, function()
 			M.copy_reference()
@@ -52,11 +88,5 @@ vim.defer_fn(function()
 		M.setup({})
 	end
 end, 0)
-
-function M.setup(opts)
-	M._setup_called = true
-	M.config = vim.tbl_extend("force", M.config, opts or {})
-	setup_keymaps()
-end
 
 return M
