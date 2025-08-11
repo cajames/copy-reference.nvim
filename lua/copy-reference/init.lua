@@ -43,11 +43,12 @@ function M.copy_reference(range)
 	end
 
 	local start_line, end_line
+	local mode = vim.fn.mode()
+	local was_visual = mode:match("^[vV\022]") ~= nil
 	if range and range.start and range.finish then
 		start_line, end_line = range.start, range.finish
 	else
-		local mode = vim.fn.mode()
-		if mode:match("^[vV\022]") then
+		if was_visual then
 			-- Visual mode selection
 			local l1 = vim.fn.line("v")
 			local l2 = vim.fn.line(".")
@@ -72,13 +73,19 @@ function M.copy_reference(range)
 	if M.config.show_notification then
 		vim.notify("Copied: " .. reference, vim.log.levels.INFO)
 	end
+
+	-- Exit visual mode after copying, to mimic normal yank behavior
+	if was_visual then
+		local esc = vim.api.nvim_replace_termcodes("<Esc>", true, false, true)
+		vim.api.nvim_feedkeys(esc, "n", false)
+	end
 end
 
 setup_keymaps = function()
 	if M.config.keymaps.copy then
 		vim.keymap.set({ "n", "v" }, M.config.keymaps.copy, function()
 			M.copy_reference()
-		end, { desc = "Copy file reference", silent = true, nowait = true })
+		end, { desc = "Copy file line reference", silent = true, nowait = true })
 	end
 end
 
