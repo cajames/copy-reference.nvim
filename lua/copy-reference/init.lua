@@ -78,7 +78,7 @@ setup_keymaps = function()
 	if M.config.keymaps.copy then
 		vim.keymap.set({ "n", "v" }, M.config.keymaps.copy, function()
 			M.copy_reference()
-		end, { desc = "Copy file reference", silent = true })
+		end, { desc = "Copy file reference", silent = true, nowait = true })
 	end
 end
 

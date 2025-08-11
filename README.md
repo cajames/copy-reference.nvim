@@ -1,13 +1,13 @@
 # copy-reference.nvim
 
-A lightweight Neovim plugin to copy file references with line numbers to your clipboard. Great for sharing exact code locations with AI agents.
+A lightweight Neovim plugin to copy file references with line numbers to your clipboard. Great for sharing exact code locations.
 
 ## Features
 
 - Copy current line reference (e.g., `lua/config.lua:42`)
 - Visual selection support for ranges (e.g., `src/main.rs:10-25`)
 - Supports command ranges (e.g., `:10,20CopyReference`)
-- Zero-config defaults with simple customizatiok
+- Zero-config defaults with simple customization
 
 ## Installation
 
