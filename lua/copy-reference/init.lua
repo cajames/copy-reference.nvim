@@ -8,6 +8,7 @@ M.config = {
 	-- Keymap configuration
 	keymaps = {
 		copy = "<leader>yr", -- Set to false to disable
+		copy_file = "<leader>yf", -- Copy only file path
 	},
 }
 
@@ -81,11 +82,41 @@ function M.copy_reference(range)
 	end
 end
 
+--- Copy only the file path (no line numbers)
+function M.copy_file_reference()
+	local path = get_path()
+	if not path or path == "" then
+		if M.config.show_notification then
+			vim.notify("No file associated with current buffer", vim.log.levels.WARN)
+		end
+		return
+	end
+
+	local mode = vim.fn.mode()
+	local was_visual = mode:match("^[vV\022]") ~= nil
+
+	vim.fn.setreg(M.config.default_register, path)
+
+	if M.config.show_notification then
+		vim.notify("Copied: " .. path, vim.log.levels.INFO)
+	end
+
+	if was_visual then
+		local esc = vim.api.nvim_replace_termcodes("<Esc>", true, false, true)
+		vim.api.nvim_feedkeys(esc, "n", false)
+	end
+end
+
 setup_keymaps = function()
 	if M.config.keymaps.copy then
 		vim.keymap.set({ "n", "v" }, M.config.keymaps.copy, function()
 			M.copy_reference()
 		end, { desc = "Copy file line reference", silent = true, nowait = true })
+	end
+	if M.config.keymaps.copy_file then
+		vim.keymap.set({ "n", "v" }, M.config.keymaps.copy_file, function()
+			M.copy_file_reference()
+		end, { desc = "Copy file path", silent = true, nowait = true })
 	end
 end
 

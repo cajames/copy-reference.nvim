@@ -1,6 +1,6 @@
 # copy-reference.nvim
 
-A lightweight Neovim plugin to copy file references with line numbers to your clipboard. Great for sharing exact code locations.
+A lightweight Neovim plugin to copy file references with line numbers to your clipboard. Great for sharing exact code locations with your friendly neighbourhood AI code agent.
 
 ## Features
 
@@ -45,7 +45,8 @@ use {
 
 - Normal mode: `<leader>yr` — copy reference for the current line
 - Visual mode: select lines, then `<leader>yr` — copy range reference
-- Command: `:CopyReference` — respects visual selection if active
+- File only: `<leader>yf` — copy only the file path
+- Commands: `:CopyReference` (line/range) and `:CopyFileReference` (file only)
 - Command with explicit range: `:10,20CopyReference` — copies `…:10-20`
 
 The copied value goes to the configured register (default `+` for system clipboard). By default, a notification is shown after copying.
@@ -66,9 +67,10 @@ require('copy-reference').setup({
   show_notification = true,
 
   -- Keybindings (set to false to disable)
-  keymaps = {
-    copy = "<leader>yr",
-  },
+    keymaps = {
+      copy = "<leader>yr",
+      copy_file = "<leader>yf",
+    },
 })
 ```
 

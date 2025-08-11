@@ -13,3 +13,7 @@ vim.api.nvim_create_user_command("CopyReference", function(opts)
 	end
 	require("copy-reference").copy_reference(range)
 end, { range = true })
+
+vim.api.nvim_create_user_command("CopyFileReference", function()
+	require("copy-reference").copy_file_reference()
+end, {})
