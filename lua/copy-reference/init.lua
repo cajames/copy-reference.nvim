@@ -1,130 +1,66 @@
 local M = {}
 
 M.config = {
-	-- Default options
-	default_register = "+",
-	relative_path = true,
-	show_notification = true,
-	-- Keymap configuration
-	keymaps = {
-		copy = "<leader>yr", -- Set to false to disable
-		copy_file = "<leader>yf", -- Copy only file path
-	},
+  register = "+",
+  use_git_root = true,
 }
 
--- Forward declare for reference in setup
-local setup_keymaps
-
--- Setup first for clarity
 function M.setup(opts)
-	M._setup_called = true
-	M.config = vim.tbl_extend("force", M.config, opts or {})
-	setup_keymaps()
+  M.config = vim.tbl_extend("force", M.config, opts or {})
+  
+  -- Create commands here during setup
+  vim.api.nvim_create_user_command("CopyReference", function() M.copy(true) end, { desc = "Copy file:line reference" })
+  vim.api.nvim_create_user_command("CopyFileReference", function() M.copy(false) end, { desc = "Copy file path" })
 end
 
 local function get_path()
-	local p
-	if M.config.relative_path then
-		p = vim.fn.fnamemodify(vim.fn.expand("%"), ":~:.")
-	else
-		p = vim.fn.expand("%:p")
-	end
-	return p
+  local path = vim.fn.expand("%:p")
+  if path == "" then return nil end
+  
+  if M.config.use_git_root then
+    local git_root = vim.fn.system("git rev-parse --show-toplevel 2>/dev/null"):gsub("\n", "")
+    if git_root ~= "" and vim.v.shell_error == 0 then
+      -- Make path relative to git root
+      if path:sub(1, #git_root) == git_root then
+        path = path:sub(#git_root + 2)  -- Remove git root + slash
+      end
+    end
+  else
+    -- Make relative to cwd
+    path = vim.fn.fnamemodify(path, ":.")
+  end
+  
+  return path
 end
 
---- Copy a file reference
---- @param range table|nil Optional table { start = number, finish = number }
-function M.copy_reference(range)
-	local path = get_path()
-	if not path or path == "" then
-		if M.config.show_notification then
-			vim.notify("No file associated with current buffer", vim.log.levels.WARN)
-		end
-		return
-	end
-
-	local start_line, end_line
-	local mode = vim.fn.mode()
-	local was_visual = mode:match("^[vV\022]") ~= nil
-	if range and range.start and range.finish then
-		start_line, end_line = range.start, range.finish
-	else
-		if was_visual then
-			-- Visual mode selection
-			local l1 = vim.fn.line("v")
-			local l2 = vim.fn.line(".")
-			start_line = math.min(l1, l2)
-			end_line = math.max(l1, l2)
-		else
-			-- Normal mode: current line
-			start_line = vim.fn.line(".")
-			end_line = start_line
-		end
-	end
-
-	local reference
-	if start_line == end_line then
-		reference = path .. ":" .. start_line
-	else
-		reference = path .. ":" .. start_line .. "-" .. end_line
-	end
-
-	vim.fn.setreg(M.config.default_register, reference)
-
-	if M.config.show_notification then
-		vim.notify("Copied: " .. reference, vim.log.levels.INFO)
-	end
-
-	-- Exit visual mode after copying, to mimic normal yank behavior
-	if was_visual then
-		local esc = vim.api.nvim_replace_termcodes("<Esc>", true, false, true)
-		vim.api.nvim_feedkeys(esc, "n", false)
-	end
+function M.copy(include_lines)
+  local path = get_path()
+  if not path then
+    vim.notify("No file to copy", vim.log.levels.WARN)
+    return
+  end
+  
+  local reference = path
+  if include_lines ~= false then
+    -- Check if in visual mode for range
+    local mode = vim.api.nvim_get_mode().mode
+    if mode:match("^[vV\022]") then
+      local l1 = vim.fn.line("v")
+      local l2 = vim.fn.line(".")
+      local start_line = math.min(l1, l2)
+      local end_line = math.max(l1, l2)
+      reference = start_line == end_line 
+        and (path .. ":" .. start_line)
+        or (path .. ":" .. start_line .. "-" .. end_line)
+      -- Exit visual mode
+      vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "n", false)
+    else
+      reference = reference .. ":" .. vim.fn.line(".")
+    end
+  end
+  
+  vim.fn.setreg(M.config.register, reference)
+  vim.notify("Copied: " .. reference)
 end
-
---- Copy only the file path (no line numbers)
-function M.copy_file_reference()
-	local path = get_path()
-	if not path or path == "" then
-		if M.config.show_notification then
-			vim.notify("No file associated with current buffer", vim.log.levels.WARN)
-		end
-		return
-	end
-
-	local mode = vim.fn.mode()
-	local was_visual = mode:match("^[vV\022]") ~= nil
-
-	vim.fn.setreg(M.config.default_register, path)
-
-	if M.config.show_notification then
-		vim.notify("Copied: " .. path, vim.log.levels.INFO)
-	end
-
-	if was_visual then
-		local esc = vim.api.nvim_replace_termcodes("<Esc>", true, false, true)
-		vim.api.nvim_feedkeys(esc, "n", false)
-	end
-end
-
-setup_keymaps = function()
-	if M.config.keymaps.copy then
-		vim.keymap.set({ "n", "v" }, M.config.keymaps.copy, function()
-			M.copy_reference()
-		end, { desc = "Copy file line reference", silent = true, nowait = true })
-	end
-	if M.config.keymaps.copy_file then
-		vim.keymap.set({ "n", "v" }, M.config.keymaps.copy_file, function()
-			M.copy_file_reference()
-		end, { desc = "Copy file path", silent = true, nowait = true })
-	end
-end
-
--- Auto-setup with defaults if user doesn't call setup
-vim.defer_fn(function()
-	if not M._setup_called then
-		M.setup({})
-	end
-end, 0)
 
 return M

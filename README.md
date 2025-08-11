@@ -1,93 +1,51 @@
 # copy-reference.nvim
 
-A lightweight Neovim plugin to copy file references with line numbers to your clipboard. Great for sharing exact code locations with your friendly neighbourhood AI code agent.
+A simple Neovim plugin to copy file references with optional line numbers to your clipboard.
 
 ## Features
 
-- Copy current line reference (e.g., `lua/config.lua:42`)
-- Visual selection support for ranges (e.g., `src/main.rs:10-25`)
-- Supports command ranges (e.g., `:10,20CopyReference`)
-- Zero-config defaults with simple customization
+- Copy file path with line number (`file.lua:42`)
+- Copy just the file path (`file.lua`)
+- Smart path detection (relative to git root or cwd)
+- Visual mode support for line ranges (`file.lua:10-25`)
 
 ## Installation
 
-### lazy.nvim
+### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 ```lua
--- Minimal setup (uses defaults)
 {
   "cajames/copy-reference.nvim",
-  lazy = false,
-}
-
--- Or with custom options
-{
-  "cajames/copy-reference.nvim",
-  lazy = false,
-  opts = {
-    -- your custom options here
+  opts = {}, -- optional configuration
+  keys = {
+    { "yr", "<cmd>CopyFileReference<cr>", mode = { "n", "v" }, desc = "Copy file path" },
+    { "yrr", "<cmd>CopyReference<cr>", mode = { "n", "v" }, desc = "Copy file:line reference" },
   },
 }
 ```
 
-### packer.nvim
+## Configuration
+
+The plugin works out of the box with sensible defaults:
 
 ```lua
-use {
-  'cajames/copy-reference.nvim',
-  config = function()
-    require('copy-reference').setup()
-  end
+{
+  register = "+",        -- Clipboard register (+ for system clipboard)
+  use_git_root = true,   -- Use git root for relative paths when in a git repo
 }
 ```
 
 ## Usage
 
-- Normal mode: `<leader>yr` — copy reference for the current line
-- Visual mode: select lines, then `<leader>yr` — copy range reference
-- File only: `<leader>yf` — copy only the file path
-- Commands: `:CopyReference` (line/range) and `:CopyFileReference` (file only)
-- Command with explicit range: `:10,20CopyReference` — copies `…:10-20`
+- `yr` - Copy the current file path
+- `yrr` - Copy the current file path with line number
+- Visual mode + `yrr` - Copy file path with line range
 
-The copied value goes to the configured register (default `+` for system clipboard). By default, a notification is shown after copying.
+## Commands
 
-## Configuration
-
-Default options:
-
-```lua
-require('copy-reference').setup({
-  -- Clipboard register ('+' for system clipboard)
-  default_register = "+",
-
-  -- Use relative path from project root / cwd
-  relative_path = true,
-
-  -- Show notification when copying
-  show_notification = true,
-
-  -- Keybindings (set to false to disable)
-    keymaps = {
-      copy = "<leader>yr",
-      copy_file = "<leader>yf",
-    },
-})
-```
-
-Notes:
-
-- If the current buffer has no associated file, the plugin will warn and do nothing.
-- For absolute paths, set `relative_path = false`.
-
-## Requirements
-
-- Neovim >= 0.7.0
-- Clipboard provider if using the system clipboard (e.g., `xclip`/`xsel` on Linux, `pbcopy` on macOS).
-
-## Troubleshooting
-
-- Clipboard not working? Check `:checkhealth provider` and ensure a clipboard provider is available on your system.
+- `:CopyReference` - Copy file:line reference
+- `:CopyFileReference` - Copy file path only
 
 ## License
 
-MIT — see LICENSE.
+MIT
