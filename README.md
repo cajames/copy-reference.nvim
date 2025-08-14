@@ -1,6 +1,6 @@
 # copy-reference.nvim
 
-A simple Neovim plugin to copy file references with optional line numbers to your clipboard. Particularly useful when working with AI coding tools, allowing you to quickly reference specific files and line numbers into your prompts.
+A simple Neovim plugin to copy file references with optional line numbers to your clipboard.
 
 ![nvim-reference](https://github.com/user-attachments/assets/b9f87b03-5347-4008-aa80-64dd3df045df)
 
