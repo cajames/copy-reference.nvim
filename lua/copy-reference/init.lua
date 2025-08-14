@@ -8,9 +8,23 @@ M.config = {
 function M.setup(opts)
   M.config = vim.tbl_extend("force", M.config, opts or {})
   
-  -- Create commands here during setup
-  vim.api.nvim_create_user_command("CopyReference", function() M.copy(true) end, { desc = "Copy file:line reference" })
-  vim.api.nvim_create_user_command("CopyFileReference", function() M.copy(false) end, { desc = "Copy file path" })
+  -- Create command with subcommands
+  vim.api.nvim_create_user_command("CopyReference", function(args)
+    local subcommand = args.args:lower()
+    if subcommand == "file" then
+      M.copy(false)
+    elseif subcommand == "line" or subcommand == "" then
+      M.copy(true)
+    else
+      vim.notify("Invalid subcommand. Use 'line' or 'file'", vim.log.levels.ERROR)
+    end
+  end, {
+    nargs = "?",
+    complete = function(ArgLead, CmdLine, CursorPos)
+      return { "line", "file" }
+    end,
+    desc = "Copy file reference with optional subcommand (line/file)"
+  })
 end
 
 local function get_path()
